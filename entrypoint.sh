@@ -2,7 +2,8 @@
 # Start OTEL Collector in background
 /usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml &
 
-# Wait for collector to be ready before starting Flask
+# Wait for collector to be ready
 sleep 2
 
-exec gunicorn --bind 0.0.0.0:8080 --workers 2 main:app
+# opentelemetry-instrument auto-instruments Flask, requests, etc. at startup
+exec opentelemetry-instrument gunicorn --bind 0.0.0.0:8080 --workers 2 main:app
