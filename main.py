@@ -8,7 +8,7 @@ tracer = trace.get_tracer(__name__)
 def hello():
     with tracer.start_as_current_span("hello-handler"):
         name = request.args.get("name", "World")
-        return jsonify({"message": f"Hello {name}!"})
+        return jsonify({"message": f"Hello {name}!", "status": "ok"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
