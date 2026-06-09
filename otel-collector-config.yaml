@@ -1,0 +1,81 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  resource/aca:
+    attributes:
+      - action: insert
+        key: kubesense.cluster
+        value: utest
+      - action: insert
+        key: kubesense.env_type
+        value: function-app
+
+  transform/parse-json-body:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - merge_maps(attributes, ParseJSON(body), "upsert")
+
+  resource/add-service:
+    attributes:
+      - action: insert
+        key: service.name
+        value: ${OTEL_SERVICE_NAME}
+
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+
+  batch:
+    send_batch_size: 100
+    timeout: 5s
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  otlphttp/kubesenselogs:
+    endpoint: http://utest.kubesense.ai:30055
+    tls:
+      insecure: true
+
+  otlphttp/kubesense:
+    endpoint: http://utest.kubesense.ai:33443
+    tls:
+      insecure: true
+
+  prometheusremotewrite:
+    endpoint: http://utest.kubesense.ai:30060/api/v1/write
+    timeout: 60s
+    compression: snappy
+    send_metadata: true
+    remote_write_queue:
+      enabled: true
+      num_consumers: 10
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  pipelines:
+    logs/otlp:
+      receivers: [otlp]
+      processors: [resource/aca, batch]
+      exporters: [otlphttp/kubesenselogs, debug]
+
+    traces:
+      receivers: [otlp]
+      processors: [resource/aca, resource/add-service, batch]
+      exporters: [otlphttp/kubesense, debug]
+
+    metrics:
+      receivers: [otlp]
+      processors: [resource/aca, batch]
+      exporters: [debug, prometheusremotewrite]
