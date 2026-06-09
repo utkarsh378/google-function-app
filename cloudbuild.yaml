@@ -1,0 +1,15 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - google-function-app
+      - --source=.
+      - --region=us-central1
+      - --platform=managed
+      - --set-env-vars=OTEL_SERVICE_NAME=google-function-app,OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318,OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - --project=$PROJECT_ID
+
+options:
+  logging: CLOUD_LOGGING_ONLY
