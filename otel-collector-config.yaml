@@ -35,8 +35,8 @@ processors:
     spike_limit_percentage: 15
 
   batch:
-    send_batch_size: 100
-    timeout: 5s
+    send_batch_size: 10
+    timeout: 1s
 
 exporters:
   debug:
