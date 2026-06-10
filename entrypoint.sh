@@ -9,4 +9,4 @@ sleep 2
 export OTEL_LOGS_EXPORTER=otlp
 export OTEL_PYTHON_LOG_CORRELATION=true
 
-exec opentelemetry-instrument gunicorn --bind 0.0.0.0:8080 --workers 2 main:app
+exec opentelemetry-instrument gunicorn --bind 0.0.0.0:8080 --workers 1 --threads 4 main:app
