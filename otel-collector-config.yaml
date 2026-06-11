@@ -6,6 +6,12 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+  filelog:
+    include: [/var/log/app.log]
+    start_at: beginning
+    operators:
+      - type: json_parser
+
 processors:
   resource/aca:
     attributes:
@@ -65,8 +71,8 @@ exporters:
 
 service:
   pipelines:
-    logs/otlp:
-      receivers: [otlp]
+    logs/filelog:
+      receivers: [filelog]
       processors: [resource/aca, batch]
       exporters: [otlphttp/kubesenselogs, debug]
 

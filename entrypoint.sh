@@ -6,7 +6,7 @@
 sleep 2
 
 # opentelemetry-instrument auto-instruments Flask, requests, etc. at startup
-export OTEL_LOGS_EXPORTER=otlp
+# OTEL_LOGS_EXPORTER not set — logs go to file, collected by filelog receiver
 export OTEL_PYTHON_LOG_CORRELATION=true
 export OTEL_BSP_SCHEDULE_DELAY=1000
 export OTEL_TRACES_SAMPLER=always_on
