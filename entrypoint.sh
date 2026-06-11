@@ -1,6 +1,4 @@
 #!/bin/sh
-# Redirect Collector output to /dev/null — only app logs reach Cloud Logging
-# (prevents circular loop: Collector logs → Cloud Logging → Pub/Sub → Collector reads them back)
 /usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml > /dev/null 2>&1 &
 
 sleep 2
@@ -11,7 +9,13 @@ sleep 2
 export OTEL_BSP_SCHEDULE_DELAY=1000
 export OTEL_TRACES_SAMPLER=always_on
 
-# Disable SDK log export — logs are collected via Pub/Sub, not SDK
+# Disable SDK log export — logs go to file, collected by filelog receiver
 export OTEL_LOGS_EXPORTER=none
 
-exec opentelemetry-instrument waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app
+# Force Python to write output immediately (no buffering) so filelog
+# receiver sees logs right away instead of waiting for the buffer to flush
+export PYTHONUNBUFFERED=1
+
+# Redirect stdout+stderr to file at the shell level — no code change needed
+# in main.py. The OS sends whatever the app writes to /var/log/app.log.
+exec opentelemetry-instrument waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /var/log/app.log 2>&1

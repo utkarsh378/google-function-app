@@ -7,13 +7,12 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  # LOGS: Cloud Logging sink forwards stdout+stderr to Pub/Sub.
-  # Collector subscribes here — no SDK, no code changes, any language.
-  # encoding: cloud_logging parses the Cloud Logging LogEntry format.
-  googlecloudpubsub:
-    project: ${GCP_PROJECT_ID}
-    subscription: projects/${GCP_PROJECT_ID}/subscriptions/cloud-run-app-logs-sub
-    encoding: cloud_logging
+  # LOGS: reads the file that entrypoint.sh redirects app stdout+stderr into.
+  # No SDK, no Cloud Logging, no Pub/Sub — zero cost, any language.
+  # App does not know its output goes to a file; the shell handles the redirect.
+  filelog:
+    include: [/var/log/app.log]
+    start_at: beginning
 
 processors:
   resource/aca:
@@ -31,7 +30,7 @@ processors:
         key: service.name
         value: ${OTEL_SERVICE_NAME}
 
-  # LOGS: upsert so it overwrites any service.name Cloud Logging already set
+  # LOGS: upsert so it always sets service.name regardless of existing attributes
   resource/add-service-logs:
     attributes:
       - action: upsert
@@ -77,9 +76,9 @@ exporters:
 
 service:
   pipelines:
-    # LOGS: Pub/Sub (fed by Cloud Logging sink) → KubeSense
-    logs/pubsub:
-      receivers: [googlecloudpubsub]
+    # LOGS: filelog receiver reads /var/log/app.log → KubeSense
+    logs/filelog:
+      receivers: [filelog]
       processors: [resource/aca, resource/add-service-logs, batch]
       exporters: [otlphttp/kubesenselogs, debug]
 
