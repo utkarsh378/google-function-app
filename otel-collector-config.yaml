@@ -31,6 +31,13 @@ processors:
         key: service.name
         value: ${OTEL_SERVICE_NAME}
 
+  # LOGS: upsert so it overwrites any service.name Cloud Logging already set
+  resource/add-service-logs:
+    attributes:
+      - action: upsert
+        key: service.name
+        value: ${OTEL_SERVICE_NAME}
+
   memory_limiter:
     check_interval: 1s
     limit_percentage: 75
@@ -73,7 +80,7 @@ service:
     # LOGS: Pub/Sub (fed by Cloud Logging sink) → KubeSense
     logs/pubsub:
       receivers: [googlecloudpubsub]
-      processors: [resource/aca, batch]
+      processors: [resource/aca, resource/add-service-logs, batch]
       exporters: [otlphttp/kubesenselogs, debug]
 
     # TRACES: OTLP from app SDK → KubeSense
