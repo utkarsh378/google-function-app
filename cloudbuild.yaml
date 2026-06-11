@@ -8,7 +8,7 @@ steps:
       - --source=.
       - --region=us-central1
       - --platform=managed
-      - --set-env-vars=OTEL_SERVICE_NAME=google-function-app,OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318,OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - --set-env-vars=OTEL_SERVICE_NAME=google-function-app,OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318,OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf,GCP_PROJECT_ID=$PROJECT_ID
       - --project=$PROJECT_ID
 
 options:

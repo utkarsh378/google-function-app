@@ -1,4 +1,5 @@
 receivers:
+  # TRACES + METRICS: received from the app via OTLP HTTP
   otlp:
     protocols:
       grpc:
@@ -6,11 +7,19 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  filelog:
-    include: [/var/log/app.log]
-    start_at: beginning
-    operators:
-      - type: json_parser
+  # LOGS: Collector pulls from Cloud Logging API.
+  # No SDK, no code changes — works for any language.
+  # Cloud Run captures stdout + stderr automatically.
+  # Collector logs are redirected to /dev/null in entrypoint.sh
+  # so they never reach Cloud Logging (prevents circular loop).
+  googlecloudlogging:
+    project: ${GCP_PROJECT_ID}
+    log_filter: |
+      resource.type="cloud_run_revision"
+      resource.labels.service_name="google-function-app"
+      (logName="projects/${GCP_PROJECT_ID}/logs/run.googleapis.com%2Fstdout"
+      OR logName="projects/${GCP_PROJECT_ID}/logs/run.googleapis.com%2Fstderr")
+    poll_interval: 10s
 
 processors:
   resource/aca:
@@ -21,13 +30,6 @@ processors:
       - action: insert
         key: kubesense.env_type
         value: function-app
-
-  transform/parse-json-body:
-    error_mode: ignore
-    log_statements:
-      - context: log
-        statements:
-          - merge_maps(attributes, ParseJSON(body), "upsert")
 
   resource/add-service:
     attributes:
@@ -48,16 +50,19 @@ exporters:
   debug:
     verbosity: detailed
 
+  # LOGS exporter → KubeSense log ingest
   otlphttp/kubesenselogs:
     endpoint: http://utest.kubesense.ai:30055
     tls:
       insecure: true
 
+  # TRACES exporter → KubeSense trace ingest
   otlphttp/kubesense:
     endpoint: http://utest.kubesense.ai:33443
     tls:
       insecure: true
 
+  # METRICS exporter → KubeSense via Prometheus Remote Write
   prometheusremotewrite:
     endpoint: http://utest.kubesense.ai:30060/api/v1/write
     timeout: 60s
@@ -71,16 +76,19 @@ exporters:
 
 service:
   pipelines:
-    logs/filelog:
-      receivers: [filelog]
+    # LOGS: Cloud Logging API → KubeSense
+    logs/cloudlogging:
+      receivers: [googlecloudlogging]
       processors: [resource/aca, batch]
       exporters: [otlphttp/kubesenselogs, debug]
 
+    # TRACES: OTLP from app SDK → KubeSense
     traces:
       receivers: [otlp]
       processors: [resource/aca, resource/add-service, batch]
       exporters: [otlphttp/kubesense, debug]
 
+    # METRICS: OTLP from app SDK → KubeSense
     metrics:
       receivers: [otlp]
       processors: [resource/aca, batch]
