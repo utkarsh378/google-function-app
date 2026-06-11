@@ -7,19 +7,13 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  # LOGS: Collector pulls from Cloud Logging API.
-  # No SDK, no code changes — works for any language.
-  # Cloud Run captures stdout + stderr automatically.
-  # Collector logs are redirected to /dev/null in entrypoint.sh
-  # so they never reach Cloud Logging (prevents circular loop).
-  googlecloudlogging:
+  # LOGS: Cloud Logging sink forwards stdout+stderr to Pub/Sub.
+  # Collector subscribes here — no SDK, no code changes, any language.
+  # encoding: cloud_logging parses the Cloud Logging LogEntry format.
+  googlecloudpubsub:
     project: ${GCP_PROJECT_ID}
-    log_filter: |
-      resource.type="cloud_run_revision"
-      resource.labels.service_name="google-function-app"
-      (logName="projects/${GCP_PROJECT_ID}/logs/run.googleapis.com%2Fstdout"
-      OR logName="projects/${GCP_PROJECT_ID}/logs/run.googleapis.com%2Fstderr")
-    poll_interval: 10s
+    subscription: projects/${GCP_PROJECT_ID}/subscriptions/cloud-run-app-logs-sub
+    encoding: cloud_logging
 
 processors:
   resource/aca:
@@ -76,9 +70,9 @@ exporters:
 
 service:
   pipelines:
-    # LOGS: Cloud Logging API → KubeSense
-    logs/cloudlogging:
-      receivers: [googlecloudlogging]
+    # LOGS: Pub/Sub (fed by Cloud Logging sink) → KubeSense
+    logs/pubsub:
+      receivers: [googlecloudpubsub]
       processors: [resource/aca, batch]
       exporters: [otlphttp/kubesenselogs, debug]
 
