@@ -18,5 +18,6 @@ export PYTHONUNBUFFERED=1
 
 # Redirect stdout+stderr to file at the shell level — no code change needed
 # in main.py. The OS sends whatever the app writes to /var/log/app.log.
-echo "entrypoint-startup-test" >> /var/log/app.log
-exec opentelemetry-instrument waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /var/log/app.log 2>&1
+ls -la /var/log/ >&2
+echo "redirect-test" >> /var/log/app.log && echo "write-succeeded" >&2 || echo "write-FAILED" >&2
+opentelemetry-instrument waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /var/log/app.log 2>&1
