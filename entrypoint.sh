@@ -1,5 +1,5 @@
 #!/bin/sh
-/usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml > /dev/null 2>&1 &
+/usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml &
 
 sleep 2
 
