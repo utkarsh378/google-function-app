@@ -1,7 +1,2 @@
 flask==3.0.3
 waitress
-opentelemetry-distro
-opentelemetry-exporter-otlp-proto-http
-opentelemetry-instrumentation-flask
-opentelemetry-instrumentation-requests
-opentelemetry-instrumentation-logging

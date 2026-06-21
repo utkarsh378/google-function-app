@@ -1,15 +1,6 @@
 receivers:
-  # TRACES + METRICS: received from the app via OTLP HTTP
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-  # LOGS: reads the file that entrypoint.sh redirects app stdout+stderr into.
+  # LOGS: reads file that entrypoint.sh redirects app stdout+stderr into.
   # No SDK, no Cloud Logging, no Pub/Sub — zero cost, any language.
-  # App does not know its output goes to a file; the shell handles the redirect.
   filelog:
     include: [/var/log/app.log]
     start_at: beginning
@@ -19,18 +10,11 @@ processors:
     attributes:
       - action: insert
         key: kubesense.cluster
-        value: utest
+        value: us2
       - action: insert
         key: kubesense.env_type
         value: function-app
 
-  resource/add-service:
-    attributes:
-      - action: insert
-        key: service.name
-        value: ${OTEL_SERVICE_NAME}
-
-  # LOGS: upsert so it always sets service.name regardless of existing attributes
   resource/add-service-logs:
     attributes:
       - action: upsert
@@ -50,46 +34,14 @@ exporters:
   debug:
     verbosity: detailed
 
-  # LOGS exporter → KubeSense log ingest
   otlphttp/kubesenselogs:
-    endpoint: http://utest.kubesense.ai:30055
+    endpoint: http://rhythemmigration.kubesense.ai:30055
     tls:
       insecure: true
-
-  # TRACES exporter → KubeSense trace ingest
-  otlphttp/kubesense:
-    endpoint: http://utest.kubesense.ai:33443
-    tls:
-      insecure: true
-
-  # METRICS exporter → KubeSense via Prometheus Remote Write
-  prometheusremotewrite:
-    endpoint: http://utest.kubesense.ai:30060/api/v1/write
-    timeout: 60s
-    compression: snappy
-    send_metadata: true
-    remote_write_queue:
-      enabled: true
-      num_consumers: 10
-    resource_to_telemetry_conversion:
-      enabled: true
 
 service:
   pipelines:
-    # LOGS: filelog receiver reads /var/log/app.log → KubeSense
     logs/filelog:
       receivers: [filelog]
-      processors: [resource/aca, resource/add-service-logs, batch]
+      processors: [memory_limiter, resource/aca, resource/add-service-logs, batch]
       exporters: [otlphttp/kubesenselogs, debug]
-
-    # TRACES: OTLP from app SDK → KubeSense
-    traces:
-      receivers: [otlp]
-      processors: [resource/aca, resource/add-service, batch]
-      exporters: [otlphttp/kubesense, debug]
-
-    # METRICS: OTLP from app SDK → KubeSense
-    metrics:
-      receivers: [otlp]
-      processors: [resource/aca, batch]
-      exporters: [debug, prometheusremotewrite]
