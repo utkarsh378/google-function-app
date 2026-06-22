@@ -2,7 +2,7 @@ receivers:
   # LOGS: reads file that entrypoint.sh redirects app stdout+stderr into.
   # No SDK, no Cloud Logging, no Pub/Sub — zero cost, any language.
   filelog:
-    include: [/var/log/app.log]
+    include: [/tmp/app.log]
     start_at: beginning
 
 processors:

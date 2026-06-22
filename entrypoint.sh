@@ -9,4 +9,4 @@ export PYTHONUNBUFFERED=1
 # Redirect stdout+stderr to file at shell level — zero code change in the app.
 # The app writes to stdout, the OS captures it to /var/log/app.log.
 # OTel Collector filelog receiver picks it up from there.
-waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /var/log/app.log 2>&1
+waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /tmp/app.log 2>&1
