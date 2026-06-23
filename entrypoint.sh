@@ -12,11 +12,11 @@ export PYTHONUNBUFFERED=1
 rotate_log() {
   while true; do
     sleep 10
-    if [ -f /tmp/app.log ] && [ $(wc -c < /tmp/app.log) -gt 102400 ]; then
-      echo "[rotation] /tmp/app.log exceeded 100KB — rotating"
+    if [ -f /tmp/app.log ] && [ $(wc -c < /tmp/app.log) -gt 209715200 ]; then
       mv /tmp/app.log /tmp/app.log.old
       rm -f /tmp/app.log.old
-      echo "[rotation] old log deleted, memory freed"
+      echo "[rotation] /tmp/app.log exceeded 200MB — log rotated" >> /tmp/app.log
+      echo "[rotation] old log deleted, memory freed" >> /tmp/app.log
     fi
   done
 }
