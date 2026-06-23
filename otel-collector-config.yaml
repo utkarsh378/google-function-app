@@ -2,7 +2,10 @@ receivers:
   # LOGS: reads file that entrypoint.sh redirects app stdout+stderr into.
   # No SDK, no Cloud Logging, no Pub/Sub — zero cost, any language.
   filelog:
-    include: [/tmp/app.log]
+    # NAMED PIPE METHOD — active
+    include: [/tmp/app.pipe]
+    # FILE METHOD — commented out
+    # include: [/tmp/app.log]
     start_at: beginning
 
 processors:
