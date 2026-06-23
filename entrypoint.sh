@@ -1,28 +1,34 @@
 #!/bin/sh
 
 # ============================================================
-# /tmp FILE METHOD (with log rotation) — active
+# SIMPLE STDOUT METHOD — active
+# Logs go to Cloud Run stdout → Cloud Logging → Pub/Sub → Vector
 # ============================================================
-/usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml &
-
-sleep 2
-
 export PYTHONUNBUFFERED=1
+waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app
 
-rotate_log() {
-  while true; do
-    sleep 10
-    if [ -f /tmp/app.log ] && [ $(wc -c < /tmp/app.log) -gt 209715200 ]; then
-      mv /tmp/app.log /tmp/app.log.old
-      rm -f /tmp/app.log.old
-      echo "[rotation] /tmp/app.log exceeded 200MB — log rotated" >> /tmp/app.log
-      echo "[rotation] old log deleted, memory freed" >> /tmp/app.log
-    fi
-  done
-}
-rotate_log &
 
-waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /tmp/app.log 2>&1
+# ============================================================
+# /tmp FILE METHOD (with log rotation) — disabled (OTel)
+# ============================================================
+# /usr/local/bin/otelcol-contrib --config=/app/otel-collector-config.yaml &
+#
+# sleep 2
+#
+# rotate_log() {
+#   while true; do
+#     sleep 10
+#     if [ -f /tmp/app.log ] && [ $(wc -c < /tmp/app.log) -gt 209715200 ]; then
+#       mv /tmp/app.log /tmp/app.log.old
+#       rm -f /tmp/app.log.old
+#       echo "[rotation] /tmp/app.log exceeded 200MB — log rotated" >> /tmp/app.log
+#       echo "[rotation] old log deleted, memory freed" >> /tmp/app.log
+#     fi
+#   done
+# }
+# rotate_log &
+#
+# waitress-serve --host=0.0.0.0 --port=8080 --threads=4 main:app >> /tmp/app.log 2>&1
 
 
 # ============================================================
